@@ -8,12 +8,37 @@ import { Textarea } from "@/components/ui/textarea";
 import { useToast } from "@/hooks/use-toast";
 import { PlusCircle, MinusCircle, Upload } from "lucide-react";
 import { useState } from "react";
+import { createHotel } from "@/services/hotelService";
+import { useNavigate } from "react-router-dom";
+import { Hotel } from "@/types/hotel";
+import { supabase } from "@/integrations/supabase/client";
 
 const AddHotelPage = () => {
   const { toast } = useToast();
+  const navigate = useNavigate();
+  const [loading, setLoading] = useState(false);
   const [images, setImages] = useState<File[]>([]);
   const [imageUrls, setImageUrls] = useState<string[]>([]);
   const [amenities, setAmenities] = useState<string[]>(['Free WiFi']);
+  
+  const [formData, setFormData] = useState({
+    name: "",
+    city: "",
+    state: "",
+    country: "",
+    address: "",
+    price: "",
+    currency: "USD",
+    description: ""
+  });
+  
+  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
+    const { id, value } = e.target;
+    setFormData({
+      ...formData,
+      [id]: value
+    });
+  };
   
   const handleAddAmenity = () => {
     setAmenities([...amenities, '']);
@@ -44,15 +69,72 @@ const AddHotelPage = () => {
     setImages(images.filter((_, i) => i !== index));
   };
   
-  const handleSubmit = (e: React.FormEvent<HTMLFormElement>) => {
+  const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
+    setLoading(true);
     
-    // In a real application, we would submit the form data to the server
-    // For now, just show a success message
-    toast({
-      title: "Hotel Added",
-      description: "Your hotel listing has been successfully created!",
-    });
+    try {
+      // Filter out empty amenities
+      const filteredAmenities = amenities.filter(amenity => amenity.trim() !== '');
+      
+      // Upload images to Supabase Storage
+      let uploadedImageUrls: string[] = [];
+      
+      if (images.length > 0) {
+        for (const image of images) {
+          const fileExt = image.name.split('.').pop();
+          const fileName = `${Math.random().toString(36).substring(2, 15)}.${fileExt}`;
+          const filePath = `hotel-images/${fileName}`;
+          
+          const { error: uploadError } = await supabase.storage
+            .from('hotels')
+            .upload(filePath, image);
+            
+          if (uploadError) {
+            throw uploadError;
+          }
+          
+          const { data } = supabase.storage.from('hotels').getPublicUrl(filePath);
+          uploadedImageUrls.push(data.publicUrl);
+        }
+      }
+      
+      // Prepare hotel data
+      const hotelData: Omit<Hotel, "id" | "rating" | "reviews" | "rooms" | "created_at"> = {
+        name: formData.name,
+        location: {
+          city: formData.city,
+          state: formData.state || undefined,
+          country: formData.country,
+          address: formData.address,
+        },
+        price: parseFloat(formData.price),
+        currency: formData.currency,
+        description: formData.description,
+        amenities: filteredAmenities,
+        images: uploadedImageUrls,
+      };
+      
+      // Create hotel in Supabase
+      await createHotel(hotelData);
+      
+      toast({
+        title: "Hotel Added",
+        description: "Your hotel listing has been successfully created!",
+      });
+      
+      // Redirect to hotels page
+      navigate("/hotels");
+      
+    } catch (error: any) {
+      toast({
+        title: "Error Adding Hotel",
+        description: error.message || "An error occurred while adding the hotel.",
+        variant: "destructive",
+      });
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (
@@ -76,6 +158,8 @@ const AddHotelPage = () => {
                     <Input
                       id="name"
                       placeholder="Enter hotel name"
+                      value={formData.name}
+                      onChange={handleInputChange}
                       required
                     />
                   </div>
@@ -86,6 +170,8 @@ const AddHotelPage = () => {
                       <Input
                         id="city"
                         placeholder="City"
+                        value={formData.city}
+                        onChange={handleInputChange}
                         required
                       />
                     </div>
@@ -94,6 +180,8 @@ const AddHotelPage = () => {
                       <Input
                         id="state"
                         placeholder="State/Province"
+                        value={formData.state}
+                        onChange={handleInputChange}
                       />
                     </div>
                     <div>
@@ -101,6 +189,8 @@ const AddHotelPage = () => {
                       <Input
                         id="country"
                         placeholder="Country"
+                        value={formData.country}
+                        onChange={handleInputChange}
                         required
                       />
                     </div>
@@ -111,6 +201,8 @@ const AddHotelPage = () => {
                     <Input
                       id="address"
                       placeholder="Full address"
+                      value={formData.address}
+                      onChange={handleInputChange}
                       required
                     />
                   </div>
@@ -123,6 +215,8 @@ const AddHotelPage = () => {
                         type="number"
                         min="0"
                         placeholder="Price"
+                        value={formData.price}
+                        onChange={handleInputChange}
                         required
                       />
                     </div>
@@ -131,6 +225,8 @@ const AddHotelPage = () => {
                       <select
                         id="currency"
                         className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
+                        value={formData.currency}
+                        onChange={handleInputChange}
                         required
                       >
                         <option value="USD">USD</option>
@@ -150,6 +246,8 @@ const AddHotelPage = () => {
                       id="description"
                       placeholder="Describe your hotel"
                       className="min-h-[100px]"
+                      value={formData.description}
+                      onChange={handleInputChange}
                       required
                     />
                   </div>
@@ -240,8 +338,12 @@ const AddHotelPage = () => {
               </div>
               
               <div className="pt-4 border-t border-gray-200 dark:border-gray-700">
-                <Button type="submit" className="w-full bg-hotel-600 hover:bg-hotel-700">
-                  Submit Hotel
+                <Button 
+                  type="submit" 
+                  className="w-full bg-hotel-600 hover:bg-hotel-700"
+                  disabled={loading}
+                >
+                  {loading ? "Submitting..." : "Submit Hotel"}
                 </Button>
               </div>
             </div>
