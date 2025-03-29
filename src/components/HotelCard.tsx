@@ -3,18 +3,55 @@ import { Hotel } from "@/types/hotel";
 import { formatCurrency } from "@/utils/formatCurrency";
 import { MapPin, Star } from "lucide-react";
 import { Link } from "react-router-dom";
+import { supabase } from "@/integrations/supabase/client";
+import { useEffect, useState } from "react";
 
 interface HotelCardProps {
   hotel: Hotel;
 }
 
 const HotelCard = ({ hotel }: HotelCardProps) => {
+  const [imageUrl, setImageUrl] = useState<string | null>(null);
+  
+  useEffect(() => {
+    const loadImage = async () => {
+      // Check if it's a full URL (from sample data) or a storage path
+      if (hotel.images[0]?.startsWith('http')) {
+        setImageUrl(hotel.images[0]);
+      } else if (hotel.images[0]) {
+        try {
+          // Get public URL from Supabase storage
+          const { data } = supabase.storage.from('hotels').getPublicUrl(hotel.images[0]);
+          setImageUrl(data.publicUrl);
+        } catch (error) {
+          console.error("Error getting image URL:", error);
+          setImageUrl(null);
+        }
+      } else if (hotel.image_url) {
+        // If hotel has image_url property (from database)
+        if (hotel.image_url.startsWith('http')) {
+          setImageUrl(hotel.image_url);
+        } else {
+          try {
+            const { data } = supabase.storage.from('hotels').getPublicUrl(hotel.image_url);
+            setImageUrl(data.publicUrl);
+          } catch (error) {
+            console.error("Error getting image URL:", error);
+            setImageUrl(null);
+          }
+        }
+      }
+    };
+    
+    loadImage();
+  }, [hotel.images, hotel.image_url]);
+
   return (
     <Link to={`/hotel/${hotel.id}`} className="block group">
       <div className="hotel-card h-full">
         <div className="relative h-56 md:h-64 overflow-hidden">
           <img
-            src={hotel.images[0]}
+            src={imageUrl || 'https://images.unsplash.com/photo-1566073771259-6a8506099945?q=80&w=1000'}
             alt={hotel.name}
             className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
           />

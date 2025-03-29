@@ -8,20 +8,26 @@ export const setupStorageBucket = async () => {
     const hotelsBucketExists = buckets?.some(bucket => bucket.name === 'hotels');
     
     if (!hotelsBucketExists) {
-      // Call our edge function to create the bucket
-      const response = await fetch(
-        `${window.location.origin}/functions/v1/create-storage-bucket`,
-        {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-            "Authorization": `Bearer ${(await supabase.auth.getSession()).data.session?.access_token}`
-          }
-        }
-      );
+      // Create the bucket directly
+      const { data, error } = await supabase.storage.createBucket('hotels', {
+        public: true,
+        fileSizeLimit: 10485760, // 10MB
+      });
       
-      if (!response.ok) {
-        console.error("Failed to create 'hotels' storage bucket");
+      if (error) {
+        console.error("Failed to create 'hotels' storage bucket:", error);
+      } else {
+        console.log("Created 'hotels' bucket successfully:", data);
+        
+        // Set bucket as public
+        const { error: policyError } = await supabase.storage.from('hotels').createSignedUrl(
+          'dummy.txt',
+          60
+        );
+        
+        if (policyError && policyError.message !== "The resource was not found") {
+          console.error("Error setting up bucket policy:", policyError);
+        }
       }
     }
   } catch (error) {

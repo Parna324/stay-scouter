@@ -32,20 +32,26 @@ export async function getHotelById(id: string) {
 }
 
 export async function createHotel(hotel: Omit<Hotel, "id" | "rating" | "reviews" | "rooms" | "created_at">) {
+  // First get the session to ensure we have the user ID
+  const { data: sessionData } = await supabase.auth.getSession();
+  const userId = sessionData.session?.user.id;
+  
+  if (!userId) {
+    throw new Error("User not authenticated");
+  }
+
   const { data, error } = await supabase
     .from("hotels")
-    .insert([
-      {
-        name: hotel.name,
-        location: hotel.location.address,
-        description: hotel.description,
-        price_per_night: hotel.price,
-        currency: hotel.currency,
-        amenities: hotel.amenities,
-        image_url: hotel.images[0] || "",
-        user_id: supabase.auth.getSession().then(res => res.data.session?.user.id)
-      }
-    ])
+    .insert({
+      name: hotel.name,
+      location: hotel.location.address,
+      description: hotel.description,
+      price_per_night: hotel.price,
+      currency: hotel.currency,
+      amenities: hotel.amenities,
+      image_url: hotel.images[0] || "",
+      user_id: userId
+    })
     .select();
 
   if (error) {

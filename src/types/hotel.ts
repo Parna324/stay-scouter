@@ -1,4 +1,3 @@
-
 export interface Hotel {
   id: string;
   name: string;
@@ -21,6 +20,11 @@ export interface Hotel {
   amenities: string[];
   rooms: Room[];
   featured?: boolean;
+  // Additional fields from database
+  image_url?: string;
+  price_per_night?: number;
+  user_id?: string;
+  created_at?: string;
 }
 
 export interface Room {
