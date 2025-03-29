@@ -45,7 +45,7 @@ const HotelCard = ({ hotel }: HotelCardProps) => {
     
     loadImage();
   }, [hotel.images, hotel.image_url]);
-
+//hi
   return (
     <Link to={`/hotel/${hotel.id}`} className="block group">
       <div className="hotel-card h-full">
