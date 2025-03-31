@@ -1,4 +1,3 @@
-
 import React, { useState, useRef, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -6,7 +5,7 @@ import { MessageCircle, X } from 'lucide-react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { Drawer, DrawerContent, DrawerHeader, DrawerTitle, DrawerTrigger } from '@/components/ui/drawer';
 import { useSearch } from '@/context/SearchContext';
-import { useMobile } from '@/hooks/use-mobile';
+import { useIsMobile } from '@/hooks/use-mobile';
 import { useNavigate } from 'react-router-dom';
 import { getAllHotels } from '@/services/hotelService';
 import { Hotel } from '@/types/hotel';
@@ -26,7 +25,7 @@ const ChatBot = () => {
   const [isLoading, setIsLoading] = useState(false);
   const [hotels, setHotels] = useState<Hotel[]>([]);
   const endOfMessagesRef = useRef<HTMLDivElement>(null);
-  const isMobile = useMobile();
+  const isMobile = useIsMobile();
   const { updateSearchParams } = useSearch();
   const navigate = useNavigate();
 
@@ -35,7 +34,30 @@ const ChatBot = () => {
       const fetchHotels = async () => {
         try {
           const hotelData = await getAllHotels();
-          setHotels(hotelData);
+          // Map the database response to the Hotel type
+          const formattedHotels: Hotel[] = hotelData.map(hotel => ({
+            id: hotel.id,
+            name: hotel.name,
+            location: {
+              city: hotel.location.includes(',') ? hotel.location.split(',')[0].trim() : '',
+              country: hotel.location.includes(',') ? hotel.location.split(',')[1].trim() : hotel.location,
+              address: hotel.location,
+            },
+            price: hotel.price_per_night || 0,
+            currency: "USD",
+            rating: hotel.rating || 4,
+            reviews: [],
+            images: [hotel.image_url || ''],
+            description: hotel.description || '',
+            amenities: hotel.amenities || [],
+            rooms: [],
+            image_url: hotel.image_url,
+            price_per_night: hotel.price_per_night,
+            user_id: hotel.user_id,
+            created_at: hotel.created_at
+          }));
+          
+          setHotels(formattedHotels);
         } catch (error) {
           console.error('Error fetching hotels for chatbot:', error);
         }
