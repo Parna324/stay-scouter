@@ -15,45 +15,63 @@ const HotelCard = ({ hotel }: HotelCardProps) => {
   
   useEffect(() => {
     const loadImage = async () => {
-      // Check if it's a full URL (from sample data) or a storage path
-      if (hotel.images[0]?.startsWith('http')) {
-        setImageUrl(hotel.images[0]);
-      } else if (hotel.images[0]) {
-        try {
-          // Get public URL from Supabase storage
-          const { data } = supabase.storage.from('hotels').getPublicUrl(hotel.images[0]);
-          setImageUrl(data.publicUrl);
-        } catch (error) {
-          console.error("Error getting image URL:", error);
-          setImageUrl(null);
+      try {
+        // Check if it's a full URL (from sample data)
+        if (hotel.images && hotel.images.length > 0 && hotel.images[0]?.startsWith('http')) {
+          setImageUrl(hotel.images[0]);
+          return;
         }
-      } else if (hotel.image_url) {
-        // If hotel has image_url property (from database)
-        if (hotel.image_url.startsWith('http')) {
-          setImageUrl(hotel.image_url);
-        } else {
-          try {
-            const { data } = supabase.storage.from('hotels').getPublicUrl(hotel.image_url);
+        
+        // Check if there's a storage path in images array
+        if (hotel.images && hotel.images.length > 0 && hotel.images[0]) {
+          const { data } = supabase.storage.from('hotels').getPublicUrl(hotel.images[0]);
+          if (data?.publicUrl) {
             setImageUrl(data.publicUrl);
-          } catch (error) {
-            console.error("Error getting image URL:", error);
-            setImageUrl(null);
+            return;
           }
         }
+        
+        // Check if there's a direct image_url
+        if (hotel.image_url) {
+          if (hotel.image_url.startsWith('http')) {
+            setImageUrl(hotel.image_url);
+            return;
+          } else {
+            const { data } = supabase.storage.from('hotels').getPublicUrl(hotel.image_url);
+            if (data?.publicUrl) {
+              setImageUrl(data.publicUrl);
+              return;
+            }
+          }
+        }
+        
+        // Fallback to a reliable placeholder
+        setImageUrl('https://images.unsplash.com/photo-1566073771259-6a8506099945?q=80&w=1000');
+      } catch (error) {
+        console.error("Error loading image:", error);
+        setImageUrl('https://images.unsplash.com/photo-1566073771259-6a8506099945?q=80&w=1000');
       }
     };
     
     loadImage();
   }, [hotel.images, hotel.image_url]);
-//hi
+
+  // Reliable fallback image in case everything else fails
+  const fallbackImage = 'https://images.unsplash.com/photo-1566073771259-6a8506099945?q=80&w=1000';
+
   return (
     <Link to={`/hotel/${hotel.id}`} className="block group">
       <div className="hotel-card h-full">
         <div className="relative h-56 md:h-64 overflow-hidden">
           <img
-            src={imageUrl || 'https://images.unsplash.com/photo-1566073771259-6a8506099945?q=80&w=1000'}
+            src={imageUrl || fallbackImage}
             alt={hotel.name}
             className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+            onError={(e) => {
+              const target = e.target as HTMLImageElement;
+              target.onerror = null; // Prevent infinite loops
+              target.src = fallbackImage;
+            }}
           />
           {hotel.featured && (
             <div className="absolute top-4 left-4 bg-hotel-600 text-white px-2 py-1 rounded text-xs">

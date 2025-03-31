@@ -6,6 +6,9 @@ import { hotels } from "@/data/hotels";
 import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 
+// Reliable fallback image in case everything else fails
+const fallbackImage = 'https://images.unsplash.com/photo-1566073771259-6a8506099945?q=80&w=1000';
+
 const DestinationsPage = () => {
   const [destinations, setDestinations] = useState<{
     city: string;
@@ -56,6 +59,13 @@ const DestinationsPage = () => {
     setFeaturedDestinations(featured);
   }, []);
 
+  // Handle image errors
+  const handleImageError = (e: React.SyntheticEvent<HTMLImageElement>) => {
+    const target = e.target as HTMLImageElement;
+    target.onerror = null; // Prevent infinite loops
+    target.src = fallbackImage;
+  };
+
   return (
     <div className="min-h-screen flex flex-col">
       <Navbar />
@@ -80,6 +90,7 @@ const DestinationsPage = () => {
                     src={`https://source.unsplash.com/featured/?${dest.city},travel&w=800&h=1200&sig=${index}`} 
                     alt={dest.city} 
                     className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500 ease-out"
+                    onError={handleImageError}
                   />
                   <div className="absolute inset-0 flex flex-col items-center justify-center z-20 p-6 text-center">
                     <h3 className="text-3xl font-bold text-white mb-2">{dest.city}</h3>
@@ -112,6 +123,7 @@ const DestinationsPage = () => {
                       src={`https://source.unsplash.com/featured/?${dest.city},landmark&w=200&h=200&sig=${index}`} 
                       alt={dest.city} 
                       className="w-full h-full object-cover"
+                      onError={handleImageError}
                     />
                   </div>
                   <div>

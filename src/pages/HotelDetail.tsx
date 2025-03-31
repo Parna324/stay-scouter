@@ -14,6 +14,9 @@ import { Calendar as CalendarIcon, MapPin, Star, Users, Wifi, ShowerHead, Utensi
 import { useEffect, useState } from "react";
 import { Link, useParams } from "react-router-dom";
 
+// Reliable fallback image in case everything else fails
+const fallbackImage = 'https://images.unsplash.com/photo-1566073771259-6a8506099945?q=80&w=1000';
+
 const HotelDetail = () => {
   const { id } = useParams<{ id: string }>();
   const [hotel, setHotel] = useState<Hotel | null>(null);
@@ -25,6 +28,7 @@ const HotelDetail = () => {
   const [adults, setAdults] = useState(2);
   const [children, setChildren] = useState(0);
   const [activeImageIndex, setActiveImageIndex] = useState(0);
+  const [processedImages, setProcessedImages] = useState<string[]>([]);
   const { toast } = useToast();
   
   const amenityIcons: Record<string, JSX.Element> = {
@@ -40,6 +44,13 @@ const HotelDetail = () => {
       const foundHotel = hotels.find(h => h.id === id);
       if (foundHotel) {
         setHotel(foundHotel);
+        
+        // Process images to ensure they all have valid URLs
+        const imageUrls = foundHotel.images.map(img => 
+          img.startsWith('http') ? img : fallbackImage
+        );
+        setProcessedImages(imageUrls.length > 0 ? imageUrls : [fallbackImage]);
+        
         if (foundHotel.rooms && foundHotel.rooms.length > 0) {
           setSelectedRoom(foundHotel.rooms[0].id);
         }
@@ -78,6 +89,13 @@ const HotelDetail = () => {
     });
   };
 
+  // Handle image errors
+  const handleImageError = (e: React.SyntheticEvent<HTMLImageElement>) => {
+    const target = e.target as HTMLImageElement;
+    target.onerror = null; // Prevent infinite loops
+    target.src = fallbackImage;
+  };
+
   return (
     <div className="min-h-screen flex flex-col">
       <Navbar />
@@ -111,13 +129,14 @@ const HotelDetail = () => {
           <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-8">
             <div className="md:col-span-3 h-80 md:h-96 rounded-lg overflow-hidden">
               <img
-                src={hotel.images[activeImageIndex]}
+                src={processedImages[activeImageIndex] || fallbackImage}
                 alt={`${hotel.name} main`}
                 className="w-full h-full object-cover"
+                onError={handleImageError}
               />
             </div>
             <div className="grid grid-cols-3 md:grid-cols-1 gap-2 h-80 md:h-96">
-              {hotel.images.map((image, index) => (
+              {processedImages.map((image, index) => (
                 <div 
                   key={index}
                   className={`h-24 md:h-[30%] rounded-lg overflow-hidden cursor-pointer transition-opacity ${
@@ -129,6 +148,7 @@ const HotelDetail = () => {
                     src={image}
                     alt={`${hotel.name} thumbnail ${index + 1}`}
                     className="w-full h-full object-cover"
+                    onError={handleImageError}
                   />
                 </div>
               ))}

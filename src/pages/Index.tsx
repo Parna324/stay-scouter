@@ -12,6 +12,9 @@ import { MapPin, Star } from "lucide-react";
 import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 
+// Reliable fallback image in case everything else fails
+const fallbackImage = 'https://images.unsplash.com/photo-1566073771259-6a8506099945?q=80&w=1000';
+
 const Index = () => {
   const [featuredHotels, setFeaturedHotels] = useState<Hotel[]>([]);
   const [topDestinations, setTopDestinations] = useState<{city: string, country: string, count: number}[]>([]);
@@ -44,6 +47,13 @@ const Index = () => {
       
     setTopDestinations(topDest);
   }, []);
+
+  // Handle image errors
+  const handleImageError = (e: React.SyntheticEvent<HTMLImageElement>) => {
+    const target = e.target as HTMLImageElement;
+    target.onerror = null; // Prevent infinite loops
+    target.src = fallbackImage;
+  };
 
   return (
     <div className="min-h-screen flex flex-col">
@@ -107,6 +117,7 @@ const Index = () => {
                   src={`https://source.unsplash.com/featured/?${destination.city},hotel&w=600&h=400&sig=${index}`} 
                   alt={destination.city} 
                   className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+                  onError={handleImageError}
                 />
                 <div className="absolute bottom-0 left-0 p-6 z-20">
                   <h3 className="text-xl font-bold text-white">{destination.city}</h3>
@@ -138,9 +149,10 @@ const Index = () => {
                   <div key={hotel.id} className="hotel-card">
                     <div className="relative h-48 overflow-hidden">
                       <img
-                        src={hotel.images[0]}
+                        src={hotel.images[0] || fallbackImage}
                         alt={hotel.name}
                         className="w-full h-full object-cover"
+                        onError={handleImageError}
                       />
                       <div className="absolute top-4 right-4 bg-red-500 text-white px-2 py-1 rounded text-xs">
                         20% OFF
