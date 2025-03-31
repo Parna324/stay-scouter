@@ -15,6 +15,30 @@ import { Link } from "react-router-dom";
 // Reliable fallback image in case everything else fails
 const fallbackImage = 'https://images.unsplash.com/photo-1566073771259-6a8506099945?q=80&w=1000';
 
+// Define unique destination images for top cities
+const destinationImages: Record<string, string> = {
+  "New York": "https://images.unsplash.com/photo-1496442226666-8d4d0e62e6e9?q=80&w=1000",
+  "London": "https://images.unsplash.com/photo-1513635269975-59663e0ac1ad?q=80&w=1000",
+  "Paris": "https://images.unsplash.com/photo-1502602898657-3e91760cbb34?q=80&w=1000",
+  "Tokyo": "https://images.unsplash.com/photo-1503899036084-c55cdd92da26?q=80&w=1000",
+  "Dubai": "https://images.unsplash.com/photo-1512453979798-5ea266f8880c?q=80&w=1000",
+  "Sydney": "https://images.unsplash.com/photo-1506973035872-a4ec16b8e8d9?q=80&w=1000",
+  "Rome": "https://images.unsplash.com/photo-1552832230-c0197dd311b5?q=80&w=1000",
+  "Mumbai": "https://images.unsplash.com/photo-1529253355930-ddbe423a2ac7?q=80&w=1000",
+  "Ubud": "https://images.unsplash.com/photo-1537996194471-e657df975ab4?q=80&w=1000",
+  "Noonu Atoll": "https://images.unsplash.com/photo-1573843981713-13042e54cd49?q=80&w=1000",
+};
+
+// Secondary destination images as fallbacks
+const secondaryDestinationImages: string[] = [
+  "https://images.unsplash.com/photo-1520250497591-112f2f40a3f4?q=80&w=1000",
+  "https://images.unsplash.com/photo-1542314831-068cd1dbfeeb?q=80&w=1000",
+  "https://images.unsplash.com/photo-1534430480872-3498386e7856?q=80&w=1000",
+  "https://images.unsplash.com/photo-1524675053444-52c3ca294ad2?q=80&w=1000",
+  "https://images.unsplash.com/photo-1468824357306-a439d58ccb1c?q=80&w=1000",
+  "https://images.unsplash.com/photo-1533587052057-2530d3b33d91?q=80&w=1000",
+];
+
 const Index = () => {
   const [featuredHotels, setFeaturedHotels] = useState<Hotel[]>([]);
   const [topDestinations, setTopDestinations] = useState<{city: string, country: string, count: number}[]>([]);
@@ -47,6 +71,23 @@ const Index = () => {
       
     setTopDestinations(topDest);
   }, []);
+
+  // Get destination image based on city name
+  const getDestinationImage = (city: string, index: number): string => {
+    // First check if we have a predefined image for this city
+    if (destinationImages[city]) {
+      return destinationImages[city];
+    }
+    
+    // If no predefined image, use one from the secondary images array with the index
+    if (secondaryDestinationImages.length > 0) {
+      const secondaryIndex = index % secondaryDestinationImages.length;
+      return secondaryDestinationImages[secondaryIndex];
+    }
+    
+    // Last resort fallback
+    return `https://source.unsplash.com/featured/?${city},landmark&w=600&h=400&sig=${Date.now() + index}`;
+  };
 
   // Handle image errors
   const handleImageError = (e: React.SyntheticEvent<HTMLImageElement>) => {
@@ -114,7 +155,7 @@ const Index = () => {
               >
                 <div className="absolute inset-0 bg-gradient-to-t from-black/70 to-transparent z-10"></div>
                 <img 
-                  src={`https://source.unsplash.com/featured/?${destination.city},hotel&w=600&h=400&sig=${index}`} 
+                  src={getDestinationImage(destination.city, index)} 
                   alt={destination.city} 
                   className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
                   onError={handleImageError}
