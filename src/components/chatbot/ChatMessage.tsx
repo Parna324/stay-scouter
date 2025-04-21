@@ -13,7 +13,10 @@ const ChatMessage: React.FC<ChatMessageProps> = ({ message, hotels }) => {
   const navigate = useNavigate();
 
   const handleHotelSelection = (hotelId: string) => {
-    navigate(`/hotel/${hotelId}`);
+    if (hotelId) {
+      console.log('Navigating to hotel:', hotelId);
+      navigate(`/hotel/${hotelId}`);
+    }
   };
 
   const formatMessage = (content: string) => {
@@ -30,7 +33,8 @@ const ChatMessage: React.FC<ChatMessageProps> = ({ message, hotels }) => {
         
         if (matchedHotel) {
           return (
-            <div key={i} className="cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-800 p-2 rounded" onClick={() => handleHotelSelection(matchedHotel.id)}>
+            <div key={i} className="cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-800 p-2 rounded" 
+                 onClick={() => handleHotelSelection(matchedHotel.id)}>
               <div dangerouslySetInnerHTML={{ __html: line }} />
             </div>
           );

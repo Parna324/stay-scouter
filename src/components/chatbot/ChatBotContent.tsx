@@ -22,8 +22,11 @@ export const ChatBotContent = ({ isExpanded = false }: ChatBotContentProps) => {
 
   useEffect(() => {
     const fetchHotels = async () => {
+      setIsLoading(true);
       try {
         const hotelData = await getAllHotels();
+        console.log('Hotel data received:', hotelData?.length || 0);
+        
         if (hotelData && Array.isArray(hotelData)) {
           // Map the database response to the Hotel type
           const formattedHotels: Hotel[] = hotelData.map((hotel: any) => ({
@@ -58,6 +61,13 @@ export const ChatBotContent = ({ isExpanded = false }: ChatBotContentProps) => {
         }
       } catch (error) {
         console.error('Error fetching hotels for chatbot:', error);
+        setMessages(prev => [...prev, { 
+          id: Date.now().toString(), 
+          content: "I'm having trouble accessing hotel information right now. Please try again later.", 
+          sender: 'bot' 
+        }]);
+      } finally {
+        setIsLoading(false);
       }
     };
     
@@ -82,9 +92,19 @@ export const ChatBotContent = ({ isExpanded = false }: ChatBotContentProps) => {
     try {
       // Process the user's query
       setTimeout(() => {
-        const botResponse = processUserQuery(userMessage.content, hotels, updateSearchParams);
-        setMessages(prev => [...prev, { id: Date.now().toString(), content: botResponse, sender: 'bot' }]);
-        setIsLoading(false);
+        try {
+          const botResponse = processUserQuery(userMessage.content, hotels, updateSearchParams);
+          setMessages(prev => [...prev, { id: Date.now().toString(), content: botResponse, sender: 'bot' }]);
+        } catch (error) {
+          console.error('Error processing query:', error);
+          setMessages(prev => [...prev, { 
+            id: Date.now().toString(), 
+            content: "Sorry, I had trouble understanding your request. Could you try phrasing it differently?", 
+            sender: 'bot' 
+          }]);
+        } finally {
+          setIsLoading(false);
+        }
       }, 500);
     } catch (error) {
       console.error('Error processing message:', error);
