@@ -2,7 +2,7 @@
 import React from 'react';
 import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
-import { ChatBotContent } from '@/components/ChatBotContent';
+import { ChatBotContent } from '@/components/chatbot/ChatBotContent';
 import { Bot } from 'lucide-react';
 
 const ChatbotPage = () => {
