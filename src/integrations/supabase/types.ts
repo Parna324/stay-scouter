@@ -9,7 +9,113 @@ export type Json =
 export type Database = {
   public: {
     Tables: {
-      [_ in never]: never
+      bookings: {
+        Row: {
+          check_in: string
+          check_out: string
+          created_at: string | null
+          hotel_id: string | null
+          id: string
+          status: string | null
+          total_price: number
+          user_id: string | null
+        }
+        Insert: {
+          check_in: string
+          check_out: string
+          created_at?: string | null
+          hotel_id?: string | null
+          id?: string
+          status?: string | null
+          total_price: number
+          user_id?: string | null
+        }
+        Update: {
+          check_in?: string
+          check_out?: string
+          created_at?: string | null
+          hotel_id?: string | null
+          id?: string
+          status?: string | null
+          total_price?: number
+          user_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "bookings_hotel_id_fkey"
+            columns: ["hotel_id"]
+            isOneToOne: false
+            referencedRelation: "hotels"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      hotels: {
+        Row: {
+          amenities: string[] | null
+          created_at: string | null
+          description: string
+          id: string
+          image_url: string
+          location: string
+          name: string
+          price_per_night: number
+          rating: number | null
+          user_id: string | null
+        }
+        Insert: {
+          amenities?: string[] | null
+          created_at?: string | null
+          description: string
+          id?: string
+          image_url: string
+          location: string
+          name: string
+          price_per_night: number
+          rating?: number | null
+          user_id?: string | null
+        }
+        Update: {
+          amenities?: string[] | null
+          created_at?: string | null
+          description?: string
+          id?: string
+          image_url?: string
+          location?: string
+          name?: string
+          price_per_night?: number
+          rating?: number | null
+          user_id?: string | null
+        }
+        Relationships: []
+      }
+      profiles: {
+        Row: {
+          avatar_url: string | null
+          created_at: string
+          first_name: string | null
+          id: string
+          last_name: string | null
+          updated_at: string
+        }
+        Insert: {
+          avatar_url?: string | null
+          created_at?: string
+          first_name?: string | null
+          id: string
+          last_name?: string | null
+          updated_at?: string
+        }
+        Update: {
+          avatar_url?: string | null
+          created_at?: string
+          first_name?: string | null
+          id?: string
+          last_name?: string | null
+          updated_at?: string
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never

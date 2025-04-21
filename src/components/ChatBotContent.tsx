@@ -32,30 +32,37 @@ export const ChatBotContent = ({ isExpanded = false }: ChatBotContentProps) => {
     const fetchHotels = async () => {
       try {
         const hotelData = await getAllHotels();
-        // Map the database response to the Hotel type
-        const formattedHotels: Hotel[] = hotelData.map(hotel => ({
-          id: hotel.id,
-          name: hotel.name,
-          location: {
-            city: hotel.location.includes(',') ? hotel.location.split(',')[0].trim() : '',
-            country: hotel.location.includes(',') ? hotel.location.split(',')[1].trim() : hotel.location,
-            address: hotel.location,
-          },
-          price: hotel.price_per_night || 0,
-          currency: "USD",
-          rating: hotel.rating || 4,
-          reviews: [],
-          images: [hotel.image_url || ''],
-          description: hotel.description || '',
-          amenities: hotel.amenities || [],
-          rooms: [],
-          image_url: hotel.image_url,
-          price_per_night: hotel.price_per_night,
-          user_id: hotel.user_id,
-          created_at: hotel.created_at
-        }));
-        
-        setHotels(formattedHotels);
+        if (hotelData && Array.isArray(hotelData)) {
+          // Map the database response to the Hotel type
+          const formattedHotels: Hotel[] = hotelData.map((hotel: any) => ({
+            id: hotel.id || '',
+            name: hotel.name || '',
+            location: {
+              city: hotel.location && hotel.location.includes(',') 
+                ? hotel.location.split(',')[0].trim() 
+                : '',
+              country: hotel.location && hotel.location.includes(',') 
+                ? hotel.location.split(',')[1].trim() 
+                : hotel.location || '',
+              address: hotel.location || '',
+            },
+            price: hotel.price_per_night || 0,
+            currency: "USD",
+            rating: hotel.rating || 4,
+            reviews: [],
+            images: [hotel.image_url || ''],
+            description: hotel.description || '',
+            amenities: hotel.amenities || [],
+            rooms: [],
+            // Additional properties from the DB
+            image_url: hotel.image_url || '',
+            price_per_night: hotel.price_per_night || 0,
+            user_id: hotel.user_id || '',
+            created_at: hotel.created_at || new Date().toISOString()
+          }));
+          
+          setHotels(formattedHotels);
+        }
       } catch (error) {
         console.error('Error fetching hotels for chatbot:', error);
       }
