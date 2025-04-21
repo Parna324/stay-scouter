@@ -17,6 +17,7 @@ import AddHotelPage from "./pages/AddHotelPage";
 import AuthPage from "./pages/AuthPage";
 import ProtectedRoute from "./components/ProtectedRoute";
 import ChatBot from "./components/ChatBot";
+import ChatbotPage from "./pages/ChatbotPage";
 
 const queryClient = new QueryClient();
 
@@ -36,6 +37,7 @@ const App = () => (
                 <Route path="/destinations" element={<DestinationsPage />} />
                 <Route path="/deals" element={<DealsPage />} />
                 <Route path="/auth" element={<AuthPage />} />
+                <Route path="/chatbot" element={<ChatbotPage />} />
                 <Route
                   path="/add-hotel"
                   element={
