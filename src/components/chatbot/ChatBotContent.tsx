@@ -54,6 +54,7 @@ export const ChatBotContent = ({ isExpanded = false }: ChatBotContentProps) => {
           }));
           
           setHotels(formattedHotels);
+          console.log('Hotels loaded for chatbot:', formattedHotels.length);
         }
       } catch (error) {
         console.error('Error fetching hotels for chatbot:', error);
@@ -72,16 +73,28 @@ export const ChatBotContent = ({ isExpanded = false }: ChatBotContentProps) => {
   };
 
   const handleSendMessage = async (input: string) => {
+    if (!input.trim()) return;
+    
     const userMessage: Message = { id: Date.now().toString(), content: input, sender: 'user' };
     setMessages(prev => [...prev, userMessage]);
     setIsLoading(true);
 
-    // Process the user's query
-    setTimeout(() => {
-      const botResponse = processUserQuery(userMessage.content, hotels, updateSearchParams);
-      setMessages(prev => [...prev, { id: Date.now().toString(), content: botResponse, sender: 'bot' }]);
+    try {
+      // Process the user's query
+      setTimeout(() => {
+        const botResponse = processUserQuery(userMessage.content, hotels, updateSearchParams);
+        setMessages(prev => [...prev, { id: Date.now().toString(), content: botResponse, sender: 'bot' }]);
+        setIsLoading(false);
+      }, 500);
+    } catch (error) {
+      console.error('Error processing message:', error);
+      setMessages(prev => [...prev, { 
+        id: Date.now().toString(), 
+        content: "Sorry, I'm having trouble processing your request. Please try again.", 
+        sender: 'bot' 
+      }]);
       setIsLoading(false);
-    }, 500);
+    }
   };
 
   const messageContainerClasses = isExpanded 

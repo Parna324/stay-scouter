@@ -1,9 +1,8 @@
 
 import { Hotel } from '@/types/hotel';
 import { Message } from './types';
-import { useSearch } from '@/context/SearchContext';
 
-export const processUserQuery = (query: string, hotels: Hotel[], updateSearchParams: ReturnType<typeof useSearch>['updateSearchParams']) => {
+export const processUserQuery = (query: string, hotels: Hotel[], updateSearchParams: any) => {
   const lowerQuery = query.toLowerCase();
   
   // Parse location
@@ -55,8 +54,11 @@ export const processUserQuery = (query: string, hotels: Hotel[], updateSearchPar
   
   if (location) {
     filteredHotels = filteredHotels.filter(
-      hotel => hotel.location.city?.toLowerCase().includes(location.toLowerCase()) || 
-              hotel.location.country?.toLowerCase().includes(location.toLowerCase())
+      hotel => {
+        const cityMatch = hotel.location.city?.toLowerCase().includes(location.toLowerCase());
+        const countryMatch = hotel.location.country?.toLowerCase().includes(location.toLowerCase());
+        return cityMatch || countryMatch;
+      }
     );
   }
   
@@ -71,7 +73,9 @@ export const processUserQuery = (query: string, hotels: Hotel[], updateSearchPar
   if (amenities.length > 0) {
     filteredHotels = filteredHotels.filter(hotel => 
       amenities.every(amenity => 
-        hotel.amenities.some(a => a.toLowerCase().includes(amenity.toLowerCase()))
+        hotel.amenities.some(a => 
+          a.toLowerCase().includes(amenity.toLowerCase())
+        )
       )
     );
   }
@@ -83,32 +87,46 @@ export const processUserQuery = (query: string, hotels: Hotel[], updateSearchPar
   // Generate response
   let botResponse = '';
   
-  if (filteredHotels.length > 0) {
+  // Generic queries handling
+  if (lowerQuery.includes('hello') || lowerQuery.includes('hi ') || lowerQuery === 'hi') {
+    botResponse = "Hello! I'm your hotel assistant. How can I help you today? You can ask me about hotels, destinations, or travel recommendations.";
+  } else if (lowerQuery.includes('how are you')) {
+    botResponse = "I'm doing well, thanks for asking! I'm ready to help you find the perfect hotel. What are you looking for?";
+  } else if (lowerQuery.includes('thank you') || lowerQuery.includes('thanks')) {
+    botResponse = "You're welcome! Is there anything else I can help you with?";
+  } else if (filteredHotels.length > 0) {
+    // Hotel search responses
     const topHotels = filteredHotels.slice(0, 3);
     botResponse = `I found ${filteredHotels.length} hotels that match your criteria. Here are the top matches:\n\n` +
       topHotels.map((hotel, index) => 
-        `${index + 1}. **${hotel.name}** in ${hotel.location.city}, ${hotel.location.country}. Price: $${hotel.price} per night. Rating: ${hotel.rating}/5.`
+        `${index + 1}. **${hotel.name}** in ${hotel.location.city || ''}, ${hotel.location.country || ''}. Price: $${hotel.price} per night. Rating: ${hotel.rating}/5.`
       ).join('\n\n') +
       `\n\nWould you like to see more details about any of these hotels or refine your search?`;
+  } else if (lowerQuery.includes('help') || lowerQuery.includes('what can you do')) {
+    botResponse = "I can help you find hotels based on location, price range, or amenities. Try asking something like 'Find hotels in New York under $200' or 'Show me hotels with a pool in Miami'.";
   } else {
-    botResponse = "I couldn't find any hotels matching your exact criteria. Could you try being a bit more general or adjust your preferences?";
+    botResponse = "I couldn't find any hotels matching your criteria. Try asking about specific locations, price ranges, or amenities. For example, 'Show me hotels in Barcelona' or 'Find hotels with a pool under $150'.";
   }
   
   // Update search context if there are filters
-  if (location || minPrice || maxPrice || amenities.length > 0 || rating > 0) {
-    const searchParams = {
-      ...(location && { location }),
-      ...(minPrice > 0 || maxPrice > 0) && { 
-        priceRange: { 
-          min: minPrice > 0 ? minPrice : 0, 
-          max: maxPrice > 0 ? maxPrice : 5000 
-        } 
-      },
-      ...(amenities.length > 0 && { amenities }),
-      ...(rating > 0 && { rating }),
-    };
-    
-    updateSearchParams(searchParams);
+  if (location || minPrice > 0 || maxPrice > 0 || amenities.length > 0 || rating > 0) {
+    try {
+      const searchParams = {
+        ...(location && { location }),
+        ...(minPrice > 0 || maxPrice > 0) && { 
+          priceRange: { 
+            min: minPrice > 0 ? minPrice : 0, 
+            max: maxPrice > 0 ? maxPrice : 5000 
+          } 
+        },
+        ...(amenities.length > 0 && { amenities }),
+        ...(rating > 0 && { rating }),
+      };
+      
+      updateSearchParams(searchParams);
+    } catch (error) {
+      console.error('Error updating search params:', error);
+    }
   }
   
   return botResponse;
