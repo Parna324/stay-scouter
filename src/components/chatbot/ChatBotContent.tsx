@@ -150,19 +150,25 @@ export const ChatBotContent = ({ isExpanded = false }: ChatBotContentProps) => {
   };
 
   const messageContainerClasses = isExpanded 
-    ? "h-[500px] overflow-y-auto px-4 py-2 space-y-4"
-    : "flex-1 overflow-y-auto px-4 py-2 space-y-4";
+    ? "h-[500px] overflow-y-auto px-6 py-4 space-y-4 scroll-smooth scrollbar-thin scrollbar-thumb-gray-300 dark:scrollbar-thumb-gray-600"
+    : "flex-1 overflow-y-auto px-6 py-4 space-y-4 scroll-smooth scrollbar-thin scrollbar-thumb-gray-300 dark:scrollbar-thumb-gray-600";
 
   return (
-    <div className="flex flex-col h-full">
+    <div className="flex flex-col h-full bg-white dark:bg-gray-900 rounded-lg shadow-lg border border-gray-200 dark:border-gray-800">
       <div className={messageContainerClasses}>
-        {messages.map(message => (
-          <ChatMessage key={message.id} message={message} hotels={hotels} />
+        {messages.map((message, index) => (
+          <ChatMessage 
+            key={`${message.id}-${index}`} 
+            message={message} 
+            hotels={hotels} 
+          />
         ))}
         {isLoading && <TypingIndicator />}
         <div ref={endOfMessagesRef} />
       </div>
-      <ChatInputForm onSendMessage={handleSendMessage} isLoading={isLoading} />
+      <div className="border-t border-gray-200 dark:border-gray-800">
+        <ChatInputForm onSendMessage={handleSendMessage} isLoading={isLoading} />
+      </div>
     </div>
   );
 };
