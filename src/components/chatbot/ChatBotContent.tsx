@@ -19,15 +19,17 @@ export const ChatBotContent = ({ isExpanded = false }: ChatBotContentProps) => {
   const endOfMessagesRef = useRef<HTMLDivElement>(null);
   const { updateSearchParams } = useSearch();
   const navigate = useNavigate();
+  const [hotelsLoaded, setHotelsLoaded] = useState(false);
 
   useEffect(() => {
     const fetchHotels = async () => {
       setIsLoading(true);
       try {
+        // First try to get hotels from the database
         const hotelData = await getAllHotels();
         console.log('Hotel data received:', hotelData?.length || 0);
         
-        if (hotelData && Array.isArray(hotelData)) {
+        if (hotelData && Array.isArray(hotelData) && hotelData.length > 0) {
           // Map the database response to the Hotel type
           const formattedHotels: Hotel[] = hotelData.map((hotel: any) => ({
             id: hotel.id || '',
@@ -57,15 +59,32 @@ export const ChatBotContent = ({ isExpanded = false }: ChatBotContentProps) => {
           }));
           
           setHotels(formattedHotels);
-          console.log('Hotels loaded for chatbot:', formattedHotels.length);
+          setHotelsLoaded(true);
+          console.log('Hotels loaded from DB for chatbot:', formattedHotels.length);
+        } else {
+          // If no hotels in the database, use the sample data
+          const { hotels: sampleHotels } = await import('@/data/hotels');
+          setHotels(sampleHotels || []);
+          setHotelsLoaded(true);
+          console.log('Hotels loaded from sample data for chatbot:', sampleHotels?.length || 0);
         }
       } catch (error) {
         console.error('Error fetching hotels for chatbot:', error);
-        setMessages(prev => [...prev, { 
-          id: Date.now().toString(), 
-          content: "I'm having trouble accessing hotel information right now. Please try again later.", 
-          sender: 'bot' 
-        }]);
+        
+        // Try to use the sample data as fallback
+        try {
+          const { hotels: sampleHotels } = await import('@/data/hotels');
+          setHotels(sampleHotels || []);
+          setHotelsLoaded(true);
+          console.log('Hotels loaded from sample data after error:', sampleHotels?.length || 0);
+        } catch (fallbackError) {
+          console.error('Error loading fallback hotel data:', fallbackError);
+          setMessages(prev => [...prev, { 
+            id: Date.now().toString(), 
+            content: "I'm having trouble accessing hotel information right now. Please try again later.", 
+            sender: 'bot' 
+          }]);
+        }
       } finally {
         setIsLoading(false);
       }
@@ -90,6 +109,19 @@ export const ChatBotContent = ({ isExpanded = false }: ChatBotContentProps) => {
     setIsLoading(true);
 
     try {
+      // Check if hotels have loaded
+      if (!hotelsLoaded) {
+        setTimeout(() => {
+          setMessages(prev => [...prev, { 
+            id: Date.now().toString(), 
+            content: "I'm still loading hotel information. Please wait a moment and try again.", 
+            sender: 'bot' 
+          }]);
+          setIsLoading(false);
+        }, 500);
+        return;
+      }
+
       // Process the user's query
       setTimeout(() => {
         try {

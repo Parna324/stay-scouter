@@ -20,6 +20,8 @@ const ChatMessage: React.FC<ChatMessageProps> = ({ message, hotels }) => {
   };
 
   const formatMessage = (content: string) => {
+    if (!content) return <div>No message content</div>;
+
     // Handle markdown-like formatting
     return content.split('\n').map((line, i) => {
       // Bold text
@@ -27,7 +29,7 @@ const ChatMessage: React.FC<ChatMessageProps> = ({ message, hotels }) => {
       
       // Check if this is a hotel in the list
       const hotelMatch = line.match(/^\d+\.\s+\*\*(.*?)\*\*/);
-      if (hotelMatch) {
+      if (hotelMatch && hotels && hotels.length > 0) {
         const hotelName = hotelMatch[1];
         const matchedHotel = hotels.find(h => h.name === hotelName);
         
@@ -46,7 +48,7 @@ const ChatMessage: React.FC<ChatMessageProps> = ({ message, hotels }) => {
   };
 
   return (
-    <div className={`flex ${message.sender === 'user' ? 'justify-end' : 'justify-start'}`}>
+    <div className={`flex ${message.sender === 'user' ? 'justify-end' : 'justify-start'} my-2`}>
       <div
         className={`max-w-[80%] rounded-lg px-4 py-2 ${
           message.sender === 'user'

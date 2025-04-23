@@ -5,12 +5,16 @@ import { Message } from './types';
 export const processUserQuery = (query: string, hotels: Hotel[], updateSearchParams: any) => {
   // Log for debugging
   console.log('Processing user query:', query);
-  console.log('Available hotels:', hotels.length);
+  console.log('Available hotels:', hotels?.length || 0);
+  
+  if (!query || !hotels || hotels.length === 0) {
+    return "I'm sorry, I don't have information about hotels at the moment. Please try again later.";
+  }
   
   const lowerQuery = query.toLowerCase();
   
   // Handle greetings and common phrases first
-  if (lowerQuery.includes('hello') || lowerQuery.includes('hi ') || lowerQuery === 'hi') {
+  if (lowerQuery.includes('hello') || lowerQuery.includes('hi ') || lowerQuery === 'hi' || lowerQuery === 'hey') {
     return "Hello! I'm your hotel assistant. How can I help you today? You can ask me about hotels, destinations, or travel recommendations.";
   } 
   
@@ -36,27 +40,49 @@ export const processUserQuery = (query: string, hotels: Hotel[], updateSearchPar
     }
   }
   
+  // Check for direct city mentions
+  const commonCities = ['new york', 'london', 'paris', 'tokyo', 'dubai', 'sydney', 'mumbai', 'bali'];
+  for (const city of commonCities) {
+    if (lowerQuery.includes(city) && !location) {
+      location = city;
+      console.log('Direct city mention detected:', city);
+      break;
+    }
+  }
+  
   // Parse price range
   let minPrice = 0;
   let maxPrice = 0;
   if (lowerQuery.includes('under ')) {
-    const priceMatch = lowerQuery.match(/under\s+(\d+)/i);
+    const priceMatch = lowerQuery.match(/under\s+\$?(\d+)/i);
     if (priceMatch && priceMatch[1]) {
       maxPrice = parseInt(priceMatch[1]);
       console.log('Detected max price:', maxPrice);
     }
   } else if (lowerQuery.includes('between ')) {
-    const priceMatch = lowerQuery.match(/between\s+(\d+)\s+and\s+(\d+)/i);
+    const priceMatch = lowerQuery.match(/between\s+\$?(\d+)\s+and\s+\$?(\d+)/i);
     if (priceMatch && priceMatch[1] && priceMatch[2]) {
       minPrice = parseInt(priceMatch[1]);
       maxPrice = parseInt(priceMatch[2]);
       console.log('Detected price range:', minPrice, '-', maxPrice);
     }
+  } else if (lowerQuery.includes('less than')) {
+    const priceMatch = lowerQuery.match(/less than\s+\$?(\d+)/i);
+    if (priceMatch && priceMatch[1]) {
+      maxPrice = parseInt(priceMatch[1]);
+      console.log('Detected max price:', maxPrice);
+    }
+  } else if (lowerQuery.includes('cheaper than')) {
+    const priceMatch = lowerQuery.match(/cheaper than\s+\$?(\d+)/i);
+    if (priceMatch && priceMatch[1]) {
+      maxPrice = parseInt(priceMatch[1]);
+      console.log('Detected max price:', maxPrice);
+    }
   }
   
   // Parse amenities
   const amenities: string[] = [];
-  const amenityKeywords = ['wifi', 'pool', 'spa', 'gym', 'restaurant', 'free breakfast', 'parking', 'beach', 'bar'];
+  const amenityKeywords = ['wifi', 'pool', 'spa', 'gym', 'restaurant', 'breakfast', 'parking', 'beach', 'bar'];
   
   amenityKeywords.forEach(amenity => {
     if (lowerQuery.includes(amenity)) {
@@ -79,7 +105,7 @@ export const processUserQuery = (query: string, hotels: Hotel[], updateSearchPar
   }
   
   // Filter hotels based on the query - handle empty or undefined values safely
-  let filteredHotels = [...hotels].filter(hotel => hotel !== undefined && hotel !== null);
+  let filteredHotels = [...(hotels || [])].filter(hotel => hotel !== undefined && hotel !== null);
   
   if (location && location.length > 0) {
     filteredHotels = filteredHotels.filter(
@@ -105,9 +131,9 @@ export const processUserQuery = (query: string, hotels: Hotel[], updateSearchPar
   
   if (amenities.length > 0) {
     filteredHotels = filteredHotels.filter(hotel => 
-      hotel.amenities && amenities.some(amenity => 
-        hotel.amenities.some(a => 
-          a.toLowerCase().includes(amenity.toLowerCase())
+      hotel.amenities && hotel.amenities.some(amenity => 
+        amenities.some(a => 
+          amenity.toLowerCase().includes(a.toLowerCase())
         )
       )
     );
@@ -119,6 +145,23 @@ export const processUserQuery = (query: string, hotels: Hotel[], updateSearchPar
 
   console.log('Filtered hotels count:', filteredHotels.length);
 
+  // If no specific filters were applied but we have a general query
+  if (!location && minPrice === 0 && maxPrice === 0 && amenities.length === 0 && rating === 0) {
+    // Check if it's a general search for hotels
+    if (lowerQuery.includes('hotel') || lowerQuery.includes('place to stay') || 
+        lowerQuery.includes('accommodation') || lowerQuery.includes('room')) {
+      // Show some featured hotels
+      const featuredHotels = hotels.filter(h => h.featured) || hotels.slice(0, 3);
+      if (featuredHotels.length > 0) {
+        return `Here are some popular hotels you might be interested in:\n\n` +
+        featuredHotels.map((hotel, index) => 
+          `${index + 1}. **${hotel.name}** in ${hotel.location.city || ''}, ${hotel.location.country || ''}. Price: $${hotel.price} per night. Rating: ${hotel.rating}/5.`
+        ).join('\n\n') +
+        `\n\nWould you like more specific recommendations? You can ask about locations, price ranges, or amenities.`;
+      }
+    }
+  }
+
   // Generate response
   let botResponse = '';
   
@@ -129,7 +172,7 @@ export const processUserQuery = (query: string, hotels: Hotel[], updateSearchPar
       topHotels.map((hotel, index) => 
         `${index + 1}. **${hotel.name}** in ${hotel.location.city || ''}, ${hotel.location.country || ''}. Price: $${hotel.price} per night. Rating: ${hotel.rating}/5.`
       ).join('\n\n') +
-      `\n\nWould you like to see more details about any of these hotels or refine your search?`;
+      `\n\nClick on any hotel name to see more details or refine your search.`;
   } else if (location || minPrice > 0 || maxPrice > 0 || amenities.length > 0 || rating > 0) {
     botResponse = "I couldn't find any hotels matching your criteria. Try asking about different locations, price ranges, or amenities. For example, 'Show me hotels in Barcelona' or 'Find hotels under $150'.";
   } else {
@@ -152,6 +195,7 @@ export const processUserQuery = (query: string, hotels: Hotel[], updateSearchPar
       };
       
       updateSearchParams(searchParams);
+      console.log('Updated search params:', searchParams);
     } catch (error) {
       console.error('Error updating search params:', error);
     }
